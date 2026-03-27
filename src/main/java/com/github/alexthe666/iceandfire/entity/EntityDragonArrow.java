@@ -58,12 +58,11 @@ public class EntityDragonArrow extends AbstractArrow {
         if (!level().isClientSide && result.getEntity() instanceof LivingEntity target) {
             if (isFromLightningBow()) {
                 com.github.alexthe666.iceandfire.api.ChainLightningUtils.createChainLightning(
-                        level(), target, getOwner());
+                        level(), target, getOwner(), (float) getBaseDamage());
             }
         }
     }
 
-    /** 检查射手是否使用闪电龙骨弓 */
     private boolean isFromLightningBow() {
         if (getOwner() instanceof LivingEntity shooter) {
             ItemStack mainHand = shooter.getMainHandItem();

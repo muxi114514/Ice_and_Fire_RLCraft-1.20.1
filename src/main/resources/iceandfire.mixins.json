@@ -5,10 +5,10 @@
   "refmap": "iceandfire.refmap.json",
   "mixins": [
     "gen.NoLakesInStructuresMixin",
-    "gen.WorldGenRegionMixin"
+    "gen.WorldGenRegionMixin",
+    "EntityMeltFireMixin"
   ],
-  "client": [
-  ],
+  "client": [],
   "injectors": {
     "defaultRequire": 1
   },

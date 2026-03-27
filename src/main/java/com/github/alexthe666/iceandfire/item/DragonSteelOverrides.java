@@ -2,8 +2,6 @@ package com.github.alexthe666.iceandfire.item;
 
 import com.github.alexthe666.iceandfire.IafConfig;
 import com.github.alexthe666.iceandfire.api.ChainLightningUtils;
-import com.github.alexthe666.iceandfire.api.VoltageConfig;
-import com.github.alexthe666.iceandfire.api.VoltageData;
 import com.github.alexthe666.iceandfire.entity.EntityDeathWorm;
 import com.github.alexthe666.iceandfire.entity.props.EntityDataProvider;
 import com.google.common.collect.Multimap;
@@ -75,20 +73,19 @@ public interface DragonSteelOverrides<T extends TieredItem> {
             }
         }
         if (isDragonsteelFire(item.getTier()) && IafConfig.dragonWeaponFireAbility) {
-            target.setSecondsOnFire(15);
-            target.knockback(1F, attacker.getX() - target.getX(), attacker.getZ() - target.getZ());
+            com.github.alexthe666.iceandfire.effect.MobEffectMelt.applyMelt(
+                    target, attacker, getAttackDamage(item), 160);
         }
         if (isDragonsteelIce(item.getTier()) && IafConfig.dragonWeaponIceAbility) {
-            EntityDataProvider.getCapability(target).ifPresent(data -> data.frozenData.setFrozen(target, 300));
-            target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 300, 2));
-            target.knockback(1F, attacker.getX() - target.getX(), attacker.getZ() - target.getZ());
+            float baseDamage = getAttackDamage(item);
+            com.github.alexthe666.iceandfire.effect.MobEffectFrostbite.applyFrostbite(target, attacker, 200,
+                    baseDamage);
         }
         if (isDragonsteelLightning(item.getTier()) && IafConfig.dragonWeaponLightningAbility) {
-            // RLC风格：链式闪电 + 电压减益（替代原版 LightningBolt 实体）
             if (!attacker.level().isClientSide) {
-                ChainLightningUtils.createChainLightning(attacker.level(), target, attacker);
+                ChainLightningUtils.createChainLightning(attacker.level(), target, attacker,
+                        getAttackDamage(item));
             }
-            target.knockback(1F, attacker.getX() - target.getX(), attacker.getZ() - target.getZ());
         }
 
     }

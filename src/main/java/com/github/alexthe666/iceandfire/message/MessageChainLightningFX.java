@@ -11,12 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-/**
- * S2C 网络包：将链式闪电的坐标链发送到客户端。
- * <p>
- * 客户端接收后通过 {@link ChainLightningRender} 使用闪电弧渲染器绘制效果，
- * 完美复刻 RLC 1.12.2 的闪电链视觉风格。
- */
 public class MessageChainLightningFX {
 
     private final List<Vec3> positions;
@@ -25,7 +19,6 @@ public class MessageChainLightningFX {
         this.positions = positions;
     }
 
-    // ── 序列化 ───────────────────────────────────────────────────────
 
     public static void write(MessageChainLightningFX msg, FriendlyByteBuf buf) {
         buf.writeInt(msg.positions.size());
@@ -45,7 +38,6 @@ public class MessageChainLightningFX {
         return new MessageChainLightningFX(positions);
     }
 
-    // ── 客户端处理 ───────────────────────────────────────────────────
 
     public static class Handler {
         public static void handle(MessageChainLightningFX msg, Supplier<NetworkEvent.Context> ctx) {
@@ -59,7 +51,6 @@ public class MessageChainLightningFX {
             context.enqueueWork(() -> {
                 if (msg.positions.size() < 2)
                     return;
-                // 使用闪电弧渲染器（LightningRender）绘制闪电链
                 ChainLightningRender.spawnChainLightning(msg.positions);
             });
 

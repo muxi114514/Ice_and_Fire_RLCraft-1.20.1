@@ -7,9 +7,6 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-/**
- * S2C 网络包：通知客户端目标实体触发了 Voltage 放电效果。
- */
 public class MessageVoltageDischargeFX {
 
     public int entityId;
@@ -18,7 +15,6 @@ public class MessageVoltageDischargeFX {
         this.entityId = entityId;
     }
 
-    // ── 序列化 ───────────────────────────────────────────────────────
 
     public static void write(MessageVoltageDischargeFX msg, FriendlyByteBuf buf) {
         buf.writeInt(msg.entityId);
@@ -28,7 +24,6 @@ public class MessageVoltageDischargeFX {
         return new MessageVoltageDischargeFX(buf.readInt());
     }
 
-    // ── 客户端处理 ───────────────────────────────────────────────────
 
     public static class Handler {
         public static void handle(MessageVoltageDischargeFX msg, Supplier<NetworkEvent.Context> ctx) {

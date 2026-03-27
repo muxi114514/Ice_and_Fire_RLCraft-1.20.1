@@ -83,6 +83,9 @@ public class IceAndFire {
 
                 MinecraftForge.EVENT_BUS.addListener(IceAndFire::onServerStarted);
 
+                com.github.alexthe666.iceandfire.config.FrostShatterConfig.load();
+                com.github.alexthe666.iceandfire.config.VoltageDischargeConfig.load();
+
                 final DeferredRegister<Codec<? extends BiomeModifier>> biomeModifiers = DeferredRegister
                                 .create(ForgeRegistries.Keys.BIOME_MODIFIER_SERIALIZERS, IceAndFire.MODID);
                 biomeModifiers.register(modBus);
@@ -102,6 +105,7 @@ public class IceAndFire {
                 IafContainerRegistry.CONTAINERS.register(modBus);
                 IafRecipeSerializers.SERIALIZERS.register(modBus);
                 IafProcessors.PROCESSORS.register(modBus);
+                com.github.alexthe666.iceandfire.effect.IafMobEffects.MOB_EFFECTS.register(modBus);
 
                 IafVillagerRegistry.POI_TYPES.register(modBus);
                 IafVillagerRegistry.PROFESSIONS.register(modBus);

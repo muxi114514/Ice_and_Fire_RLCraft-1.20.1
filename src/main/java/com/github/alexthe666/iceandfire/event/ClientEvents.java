@@ -47,14 +47,15 @@ public class ClientEvents {
 
     private static boolean shouldCancelRender(LivingEntity living) {
         if (living.getVehicle() != null && living.getVehicle() instanceof EntityDragonBase) {
-            return ClientProxy.currentDragonRiders.contains(living.getUUID()) || living == Minecraft.getInstance().player && Minecraft.getInstance().options.getCameraType().isFirstPerson();
+            return ClientProxy.currentDragonRiders.contains(living.getUUID())
+                    || living == Minecraft.getInstance().player
+                            && Minecraft.getInstance().options.getCameraType().isFirstPerson();
         }
         return false;
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void renderWorldLastEvent(@NotNull final RenderLevelStageEvent event)
-    {
+    public static void renderWorldLastEvent(@NotNull final RenderLevelStageEvent event) {
         WorldEventContext.INSTANCE.renderWorldLastEvent(event);
     }
 
@@ -90,7 +91,8 @@ public class ClientEvents {
                 moveController.dismount(mc.options.keyShift.isDown());
                 byte controlState = moveController.getControlState();
                 if (controlState != previousState) {
-                    IceAndFire.NETWORK_WRAPPER.sendToServer(new MessageDragonControl(entity.getId(), controlState, entity.getX(), entity.getY(), entity.getZ()));
+                    IceAndFire.NETWORK_WRAPPER.sendToServer(new MessageDragonControl(entity.getId(), controlState,
+                            entity.getX(), entity.getY(), entity.getZ()));
                 }
             }
         }
@@ -108,7 +110,8 @@ public class ClientEvents {
                     moveController.strike(IafKeybindRegistry.dragon_fireAttack.isDown());
                     byte controlState = moveController.getControlState();
                     if (controlState != previousState) {
-                        IceAndFire.NETWORK_WRAPPER.sendToServer(new MessageDragonControl(entity.getId(), controlState, entity.getX(), entity.getY(), entity.getZ()));
+                        IceAndFire.NETWORK_WRAPPER.sendToServer(new MessageDragonControl(entity.getId(), controlState,
+                                entity.getX(), entity.getY(), entity.getZ()));
                     }
                 }
             }
@@ -135,14 +138,16 @@ public class ClientEvents {
                         return;
                     }
 
-                    if (IafConfig.sirenShader && !data.sirenData.isCharmed && renderer.currentEffect() != null && SIREN_SHADER.toString().equals(renderer.currentEffect().getName())) {
+                    if (IafConfig.sirenShader && !data.sirenData.isCharmed && renderer.currentEffect() != null
+                            && SIREN_SHADER.toString().equals(renderer.currentEffect().getName())) {
                         renderer.shutdownEffect();
                     }
 
-                if (data.sirenData.isCharmed) {
-                    if (player.level().isClientSide && rand.nextInt(40) == 0) {
-                        IceAndFire.PROXY.spawnParticle(EnumParticles.Siren_Appearance, player.getX(), player.getY(), player.getZ(), data.sirenData.charmedBy.getHairColor(), 0, 0);
-                    }
+                    if (data.sirenData.isCharmed) {
+                        if (player.level().isClientSide && rand.nextInt(40) == 0) {
+                            IceAndFire.PROXY.spawnParticle(EnumParticles.Siren_Appearance, player.getX(), player.getY(),
+                                    player.getZ(), data.sirenData.charmedBy.getHairColor(), 0, 0);
+                        }
 
                         if (IafConfig.sirenShader && renderer.currentEffect() == null) {
                             renderer.loadEffect(SIREN_SHADER);
@@ -171,20 +176,27 @@ public class ClientEvents {
 
         EntityDataProvider.getCapability(entity).ifPresent(data -> {
             for (LivingEntity target : data.miscData.getTargetedByScepter()) {
-                CockatriceBeamRender.render(entity, target, event.getPoseStack(), event.getMultiBufferSource(), event.getPartialTick());
+                CockatriceBeamRender.render(entity, target, event.getPoseStack(), event.getMultiBufferSource(),
+                        event.getPartialTick());
             }
 
             if (data.frozenData.isFrozen) {
-                RenderFrozenState.render(event.getEntity(), event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight(), data.frozenData.frozenTicks);
+                RenderFrozenState.render(event.getEntity(), event.getPoseStack(), event.getMultiBufferSource(),
+                        event.getPackedLight(), data.frozenData.frozenTicks);
             }
 
-            RenderChain.render(entity, event.getPartialTick(), event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight(), data.chainData.getChainedTo());
+            RenderChain.render(entity, event.getPartialTick(), event.getPoseStack(), event.getMultiBufferSource(),
+                    event.getPackedLight(), data.chainData.getChainedTo());
         });
+
+        com.github.alexthe666.iceandfire.client.render.MeltEffectRenderer.renderMeltFire(entity, event.getPoseStack(),
+                event.getMultiBufferSource(), event.getPackedLight());
     }
 
     @SubscribeEvent
     public void onGuiOpened(ScreenEvent.Opening event) {
-        if (IafConfig.customMainMenu && event.getScreen() instanceof TitleScreen && !(event.getScreen() instanceof IceAndFireMainMenu)) {
+        if (IafConfig.customMainMenu && event.getScreen() instanceof TitleScreen
+                && !(event.getScreen() instanceof IceAndFireMainMenu)) {
             event.setNewScreen(new IceAndFireMainMenu());
         }
     }
@@ -194,7 +206,8 @@ public class ClientEvents {
 
     @SubscribeEvent
     public void onEntityMount(EntityMountEvent event) {
-        if (event.getEntityBeingMounted() instanceof EntityDragonBase dragon && event.getLevel().isClientSide && event.getEntityMounting() == Minecraft.getInstance().player) {
+        if (event.getEntityBeingMounted() instanceof EntityDragonBase dragon && event.getLevel().isClientSide
+                && event.getEntityMounting() == Minecraft.getInstance().player) {
             if (dragon.isTame() && dragon.isOwnedBy(Minecraft.getInstance().player)) {
                 if (AUTO_ADAPT_3RD_PERSON) {
                     // Auto adjust 3rd person camera's according to dragon's size
@@ -202,7 +215,8 @@ public class ClientEvents {
                 }
                 if (IafConfig.dragonAuto3rdPerson) {
                     if (event.isDismounting()) {
-                        Minecraft.getInstance().options.setCameraType(CameraType.values()[IceAndFire.PROXY.getPreviousViewType()]);
+                        Minecraft.getInstance().options
+                                .setCameraType(CameraType.values()[IceAndFire.PROXY.getPreviousViewType()]);
                     } else {
                         IceAndFire.PROXY.setPreviousViewType(Minecraft.getInstance().options.getCameraType().ordinal());
                         Minecraft.getInstance().options.setCameraType(CameraType.values()[1]);

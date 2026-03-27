@@ -17,30 +17,63 @@ public class FrozenData {
     private boolean triggerClientUpdate;
 
     public void tickFrozen(final LivingEntity entity) {
+        if (!entity.level().isClientSide()) { // SERVER SIDE SYNC
+            if (entity.hasEffect(com.github.alexthe666.iceandfire.effect.IafMobEffects.FROSTBURN.get())) {
+                if (isFrozen) {
+                    clearFrozen(entity);
+                }
+                return;
+            }
+
+            net.minecraft.world.effect.MobEffectInstance frostbite = entity
+                    .getEffect(com.github.alexthe666.iceandfire.effect.IafMobEffects.FROSTBITE.get());
+            if (frostbite != null) {
+                if (!isFrozen) {
+                    entity.playSound(SoundEvents.GLASS_PLACE, 1, 1);
+                    isFrozen = true;
+                    triggerClientUpdate = true;
+                }
+                frozenTicks = frostbite.getDuration();
+            } else if (isFrozen) {
+                clearFrozen(entity);
+            }
+        }
+
         if (!isFrozen) {
             return;
         }
 
         if (entity instanceof EntityIceDragon) {
             clearFrozen(entity);
+            if (!entity.level().isClientSide()) {
+                entity.removeEffect(com.github.alexthe666.iceandfire.effect.IafMobEffects.FROSTBITE.get());
+            }
             return;
         }
 
-        if (entity.isOnFire()) {
+        if (entity.isOnFire() && !entity.hasEffect(com.github.alexthe666.iceandfire.effect.IafMobEffects.MELT.get())) {
             clearFrozen(entity);
             entity.clearFire();
+            if (!entity.level().isClientSide()) {
+                entity.removeEffect(com.github.alexthe666.iceandfire.effect.IafMobEffects.FROSTBITE.get());
+            }
             return;
         }
 
         if (entity.isDeadOrDying()) {
             clearFrozen(entity);
+            if (!entity.level().isClientSide()) {
+                entity.removeEffect(com.github.alexthe666.iceandfire.effect.IafMobEffects.FROSTBITE.get());
+            }
             return;
         }
 
-        if (frozenTicks > 0) {
-            frozenTicks--;
-        } else {
-            clearFrozen(entity);
+        if (entity.level().isClientSide()) {
+            if (frozenTicks > 0) {
+                frozenTicks--;
+            } else {
+                clearFrozen(entity);
+            }
         }
 
         if (isFrozen && !(entity instanceof Player player && player.isCreative())) {
@@ -60,6 +93,12 @@ public class FrozenData {
         frozenTicks = duration;
         isFrozen = true;
         triggerClientUpdate = true;
+
+        if (!target.level().isClientSide()) {
+            target.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                    com.github.alexthe666.iceandfire.effect.IafMobEffects.FROSTBITE.get(), duration, 9, false, true,
+                    true));
+        }
     }
 
     private void clearFrozen(final LivingEntity entity) {

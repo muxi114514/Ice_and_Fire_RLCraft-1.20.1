@@ -20,31 +20,18 @@ import net.minecraft.world.phys.Vec3;
 
 import java.util.*;
 
-/**
- * 链式闪电核心逻辑：从目标实体开始，逐跳搜索最近的敌对实体造成递减伤害。
- * <p>
- * 本类自包含，参考 RLC 1.12.2 的 {@code ChainLightningUtils} 和
- * JMixin CE 版的实现，使用 1.20 API 重写。
- */
 public final class ChainLightningUtils {
 
     private ChainLightningUtils() {
     }
 
-    /**
-     * 触发链式闪电，从 {@code target} 开始跳跃伤害周围敌人。
-     *
-     * @param level    服务端世界
-     * @param target   刚被击中的实体
-     * @param attacker 发起攻击的实体（可能是 Player）
-     */
-    public static void createChainLightning(Level level, LivingEntity target, Entity attacker) {
+    public static void createChainLightning(Level level, LivingEntity target, Entity attacker,
+            float baseWeaponDamage) {
         if (level.isClientSide)
             return;
         if (!target.isAttackable())
             return;
 
-        // 玩家冷却检查
         if (attacker instanceof Player player) {
             if (player.getCooldowns().isOnCooldown(player.getMainHandItem().getItem())) {
                 return;
@@ -57,17 +44,17 @@ public final class ChainLightningUtils {
         float[] damage = VoltageConfig.CHAIN_DAMAGE_PER_HOP;
         int range = VoltageConfig.CHAIN_RANGE;
 
-        // ── 首跳：伤害初始目标 ───────────────────────────────────────
         int hop = 0;
         attackWithLightning(level, attacker, target, damage[hop]);
-        VoltageData.applyVoltage(target, VoltageConfig.VOLTAGE_DURATION_TICKS);
+        com.github.alexthe666.iceandfire.effect.MobEffectVoltage.applyVoltage(
+                target, (LivingEntity) attacker,
+                com.github.alexthe666.iceandfire.effect.MobEffectVoltage.DURATION_TICKS,
+                baseWeaponDamage);
         target.playSound(SoundEvents.LIGHTNING_BOLT_IMPACT, 0.5F, 1.0F);
 
-        // 收集坐标链用于客户端粒子渲染
         List<Vec3> chainPositions = new ArrayList<>();
         chainPositions.add(target.getBoundingBox().getCenter());
 
-        // ── 后续跳跃 ────────────────────────────────────────────────
         LivingEntity source = target;
         Set<Integer> visited = new HashSet<>();
         visited.add(target.getId());
@@ -85,26 +72,26 @@ public final class ChainLightningUtils {
             if (candidates.isEmpty())
                 break;
 
-            // 选最近的目标
             candidates.sort(Comparator.comparingDouble(
                     e -> e.distanceToSqr(currentSource)));
             LivingEntity next = candidates.get(0);
 
             attackWithLightning(level, attacker, next, damage[hop]);
-            VoltageData.applyVoltage(next, VoltageConfig.VOLTAGE_DURATION_TICKS);
+            com.github.alexthe666.iceandfire.effect.MobEffectVoltage.applyVoltage(
+                    next, (LivingEntity) attacker,
+                    com.github.alexthe666.iceandfire.effect.MobEffectVoltage.DURATION_TICKS,
+                    baseWeaponDamage);
 
             visited.add(next.getId());
             chainPositions.add(next.getBoundingBox().getCenter());
             source = next;
         }
 
-        // ── 发送粒子网络包 ───────────────────────────────────────────
         if (level instanceof ServerLevel serverLevel && chainPositions.size() >= 2) {
             sendLightningFxPacket(serverLevel, target, chainPositions);
         }
     }
 
-    // ── 伤害处理 ─────────────────────────────────────────────────────
 
     private static void attackWithLightning(Level level, Entity attacker,
             LivingEntity target, float dmg) {
@@ -116,23 +103,14 @@ public final class ChainLightningUtils {
         }
         target.hurt(src, dmg);
 
-        // 苦力怕 → 充能苦力怕
         if (target instanceof Creeper creeper && !creeper.isPowered()) {
             CompoundTag tag = new CompoundTag();
             creeper.addAdditionalSaveData(tag);
             tag.putBoolean("powered", true);
             creeper.readAdditionalSaveData(tag);
         }
-
-        // 击退
-        if (attacker != null) {
-            target.knockback(0.4F,
-                    attacker.getX() - target.getX(),
-                    attacker.getZ() - target.getZ());
-        }
     }
 
-    // ── 目标验证 ─────────────────────────────────────────────────────
 
     private static boolean canHurt(LivingEntity target, Entity attacker) {
         if (!target.isAlive())
@@ -152,7 +130,6 @@ public final class ChainLightningUtils {
         if (!canHurt(target, attacker))
             return false;
 
-        // 不链到玩家驯服的宠物（除非宠物正在攻击攻击者）
         if (target instanceof TamableAnimal tamable) {
             LivingEntity owner = tamable.getOwner();
             if (owner instanceof Player) {
@@ -171,7 +148,6 @@ public final class ChainLightningUtils {
         return true;
     }
 
-    // ── 网络包发送 ───────────────────────────────────────────────────
 
     private static void sendLightningFxPacket(ServerLevel level,
             LivingEntity origin,

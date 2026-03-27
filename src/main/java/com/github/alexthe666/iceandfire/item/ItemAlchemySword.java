@@ -2,8 +2,7 @@ package com.github.alexthe666.iceandfire.item;
 
 import com.github.alexthe666.iceandfire.IafConfig;
 import com.github.alexthe666.iceandfire.api.ChainLightningUtils;
-import com.github.alexthe666.iceandfire.api.VoltageConfig;
-import com.github.alexthe666.iceandfire.api.VoltageData;
+import com.github.alexthe666.iceandfire.effect.MobEffectMelt;
 import com.github.alexthe666.iceandfire.entity.EntityFireDragon;
 import com.github.alexthe666.iceandfire.entity.EntityIceDragon;
 import com.github.alexthe666.iceandfire.entity.props.EntityDataProvider;
@@ -32,23 +31,20 @@ public class ItemAlchemySword extends SwordItem {
             if (target instanceof EntityIceDragon) {
                 target.hurt(attacker.level().damageSources().inFire(), 13.5F);
             }
-            target.setSecondsOnFire(5);
-            target.knockback(1F, attacker.getX() - target.getX(), attacker.getZ() - target.getZ());
+            MobEffectMelt.applyMelt(target, attacker, ((SwordItem) this).getDamage(), 120);
         }
         if (this == IafItemRegistry.DRAGONBONE_SWORD_ICE.get() && IafConfig.dragonWeaponIceAbility) {
             if (target instanceof EntityFireDragon) {
                 target.hurt(attacker.level().damageSources().drown(), 13.5F);
             }
-
-            EntityDataProvider.getCapability(target).ifPresent(data -> data.frozenData.setFrozen(target, 200));
-            target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100, 2));
-            target.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN, 100, 2));
-            target.knockback(1F, attacker.getX() - target.getX(), attacker.getZ() - target.getZ());
+            float baseDamage = ((SwordItem) this).getDamage();
+            com.github.alexthe666.iceandfire.effect.MobEffectFrostbite.applyFrostbite(target, attacker, 200,
+                    baseDamage);
         }
         if (this == IafItemRegistry.DRAGONBONE_SWORD_LIGHTNING.get() && IafConfig.dragonWeaponLightningAbility) {
-            // RLC风格：链式闪电 + 电压减益
             if (!attacker.level().isClientSide) {
-                ChainLightningUtils.createChainLightning(attacker.level(), target, attacker);
+                float baseDamage = ((SwordItem) this).getDamage();
+                ChainLightningUtils.createChainLightning(attacker.level(), target, attacker, baseDamage);
             }
             if (target instanceof EntityFireDragon || target instanceof EntityIceDragon) {
                 target.hurt(attacker.level().damageSources().lightningBolt(), 9.5F);
