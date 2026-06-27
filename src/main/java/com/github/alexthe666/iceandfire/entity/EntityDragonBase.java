@@ -1989,9 +1989,54 @@ public abstract class EntityDragonBase extends TamableAnimal implements IPassabi
         if (airTarget != null && (doesWantToLand() && getTarget() == null)) {
             airTarget = null;
         }
-        // 有攻击目标时动态追踪
-        if (getTarget() != null && getTarget().isAlive()) {
-            airTarget = getTarget().blockPosition();
+        if (this.hasHomePosition && this.distanceToSqr(this.homePos.getPosition().getCenter()) >= IafConfig.dragonWanderFromHomeDistance * IafConfig.dragonWanderFromHomeDistance) { //if outside nest, get back
+    		Vec3 home = dragon.homePos.getPosition().getCenter();
+    		double angle = Math.PI * 2 * this.dragon.getRandom().nextDouble();
+			float distance = (float)IafConfig.dragonWanderFromHomeDistance - (this.dragon.getRandom().nextFloat() * (float)IafConfig.dragonWanderFromHomeDistance); //basically chooses a random angle, and random distance, 
+			airTarget = new Vec3(home.x+ (Math.sin(angle) * distance), home.y + 48, home.z + (Math.cos(angle) * distance));
+			return;  //we return since we dont need to call for anything else
+    	}
+        // when the dragon has a target
+        if (this.getTarget() != null && this.getTarget().isAlive()) {
+			LivingEntity entity = this.getTarget();
+			if (this.distanceToSqr(entity.getX(), this.getY(), entity.getZ()) > 1024) { //basically, keep moving in random directions around the target 
+				double randomDist = 64d - this.getRandom().nextDouble() * 32d; //max 64 blocks distance from target, doesnt matter since this will try again if the dragon is far away
+				double angle = Math.PI * 2 * this.getRandom().nextDouble();
+				airTarget = new Vec3(entity.getX() + (Math.sin(angle) * randomDist), entity.getY() + 48,
+						entity.getZ() + (Math.cos(angle) * randomDist));
+			} 
+        } else if (airTarget == null || this.distanceToSqr(airTarget.x, airTarget.y, airTarget.z) < 1
+                || this.getCommand() == 2 && this.shouldTPtoOwner()) { //when dragon has no target or is commanded, basically it will try to pick a random location 
+            BlockPos viewBlock = null;
+
+            if (this instanceof EntityIceDragon && this.isInWater()) {
+                viewBlock = DragonUtils.getWaterBlockInView(this);
+            }
+            if (this.getCommand() == 2 && this.useFlyingPathFinder()) {
+                if (this instanceof EntityIceDragon && this.isInWater()) {
+                    viewBlock = DragonUtils.getWaterBlockInViewEscort(this);
+                } else {
+                    viewBlock = DragonUtils.getBlockInViewEscort(this);
+                }
+            } else if (this.lookingForRoostAIFlag) { //im not sure if this is even used but for now it will have to stay
+                BlockPos upPos = this.getRestrictCenter();
+                if (this.distanceToSqr(Vec3.atCenterOf(this.getRestrictCenter())) > IafConfig.dragonWanderFromHomeDistance * IafConfig.dragonWanderFromHomeDistance) {
+                    if (!this.doesWantToLand()) { // i assume that if the dragon doesnt want to land then keep it in altitude.
+                        upPos = upPos.above(48);
+                    }
+                }
+                viewBlock = upPos;
+
+            } else if(viewBlock == null){
+                viewBlock = DragonUtils.getBlockInView(this); //if nothing specific then we get a random location to travel
+                if (this.isInWater()) {
+                    // If the dragon is in water, take off to reach the air target
+                    this.setHovering(true);
+                }
+            }
+            if (viewBlock != null) {
+                airTarget = new Vec3(viewBlock.getX() + 0.5, viewBlock.getY() + 0.5, viewBlock.getZ() + 0.5);
+            }
         }
         if (airTarget != null) {
             flyTowardsTarget();
@@ -1999,6 +2044,7 @@ public abstract class EntityDragonBase extends TamableAnimal implements IPassabi
     }
 
     // 向airTarget移动并转向（移植自1.12.2 RLC，适配1.20.1 API）
+    //are you sure this isnt done inside IafDragonFlightManager.FlightMoveHelper? please check if logic is similar
     public void flyTowardsTarget() {
         if (airTarget == null) {
             return;
@@ -2037,7 +2083,7 @@ public abstract class EntityDragonBase extends TamableAnimal implements IPassabi
                 this.setHovering(false);
                 hoverTicks = 0;
             }
-            if (this.getDistanceSquared(new Vec3(airTarget.getX(), this.getY(), airTarget.getZ())) < 3 && this.doesWantToLand()) {
+            if (this.distanceToSqr(new Vec3(airTarget.getX(), this.getY(), airTarget.getZ())) < 3 && this.doesWantToLand()) {
                 setFlying(false);
                 setHovering(true);
             }
