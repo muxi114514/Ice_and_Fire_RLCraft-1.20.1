@@ -2086,13 +2086,6 @@ public abstract class EntityDragonBase extends TamableAnimal implements IPassabi
         this.entityData.set(CRYSTAL_BOUND, crystalBound);
     }
 
-    public float getDistanceSquared(Vec3 Vector3d) {
-        final float f = (float) (this.getX() - Vector3d.x);
-        final float f1 = (float) (this.getY() - Vector3d.y);
-        final float f2 = (float) (this.getZ() - Vector3d.z);
-        return f * f + f1 * f1 + f2 * f2;
-    }
-
     public abstract Item getVariantScale(int variant);
 
     public abstract Item getVariantEgg(int variant);
